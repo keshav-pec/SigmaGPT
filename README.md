@@ -1,4 +1,4 @@
-# SigmaGPT - ChatGPT Clone
+# SigmaGPT - Chatbot Prototype
 
 A fully-featured ChatGPT-like web application built with React and Node.js, featuring real-time streaming responses, conversation management, and a sleek dark theme interface.
 
