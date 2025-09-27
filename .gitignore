@@ -60,3 +60,4 @@ Thumbs.db
 
 # Deployment sensitive files
 deploy-railway.sh
+verify-deployment.sh
