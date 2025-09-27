@@ -28,7 +28,7 @@ if (usePuter) {
 // Middleware - Configure CORS for production
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.FRONTEND_URL, /\.vercel\.app$/, /\.netlify\.app$/] 
+    ? true  // Allow all origins for now - we'll restrict this later
     : ['http://localhost:3000', 'http://localhost:3003'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
