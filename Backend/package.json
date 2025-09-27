@@ -1,0 +1,21 @@
+{
+  "name": "sigmagpt-backend",
+  "version": "1.0.0",
+  "description": "SigmaGPT - A Chatbot prototype with modern animations and Puter.js integration",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@heyputer/puter.js": "^2.0.13",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "openai": "^5.12.2"
+  }
+}

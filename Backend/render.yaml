@@ -1,0 +1,25 @@
+# Render.com Configuration
+# This file is automatically detected by Render
+
+# Build Command
+build: npm install
+
+# Start Command  
+start: npm start
+
+# Environment
+environment: node
+
+# Instance Type
+plan: free
+
+# Health Check Path
+healthcheckPath: /api/health
+
+# Auto-Deploy
+autoDeploy: true
+
+# Environment Variables (set these in Render dashboard)
+# USE_PUTER=true
+# NODE_ENV=production
+# FRONTEND_URL=https://your-frontend-url.vercel.app
