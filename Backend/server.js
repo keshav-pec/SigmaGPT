@@ -11,7 +11,10 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize AI client based on configuration
 let aiClient;
-const usePuter = process.env.USE_PUTER === 'true';
+// Prefer OpenAI when an API key is present. Use Puter only when explicitly
+// requested AND no OpenAI API key is configured.
+const openaiKeyPresent = !!process.env.OPENAI_API_KEY || !!process.env.OPEN_AI_KEY;
+const usePuter = (process.env.USE_PUTER === 'true') && !openaiKeyPresent;
 
 if (usePuter) {
   // Initialize Puter.js
