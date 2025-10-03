@@ -267,10 +267,11 @@ app.post('/api/conversations/:id/messages', async (req, res) => {
     });
     
   } catch (error) {
+    // Log full error server-side for debugging, but do NOT expose error.message
+    // to clients because it may contain sensitive information (API keys, tokens).
     console.error('AI API error:', error);
-    res.status(500).json({ 
-      error: 'Failed to get response from AI',
-      details: error.message 
+    res.status(502).json({ 
+      error: 'AI provider error. Check server logs for details.'
     });
   }
 });
@@ -372,10 +373,12 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
     })}\n\n`);
     
   } catch (error) {
+    // Log the streaming error server-side but send a generic error message to the client
+    // to avoid leaking any sensitive details that may be included in the error object.
     console.error('AI Streaming API error:', error);
     res.write(`data: ${JSON.stringify({ 
       type: 'error', 
-      data: { message: 'Failed to get response from AI', details: error.message } 
+      data: { message: 'AI provider error. Check server logs for details.' } 
     })}\n\n`);
   }
   
