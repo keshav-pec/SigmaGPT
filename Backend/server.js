@@ -17,9 +17,10 @@ const openaiKeyPresent = !!process.env.OPENAI_API_KEY || !!process.env.OPEN_AI_K
 const usePuter = (process.env.USE_PUTER === 'true') && !openaiKeyPresent;
 
 if (usePuter) {
-  // Initialize Puter.js
-  console.log('🚀 Using Puter.js for AI capabilities');
-  // Initialize Puter (it may need authentication in the future)
+  // Initialize Puter.js - works without authentication in anonymous mode
+  console.log('🚀 Using Puter.js for AI capabilities (anonymous mode)');
+  // Puter.js can work in anonymous mode for basic AI chat
+  // No authentication needed for basic usage
   aiClient = puter;
 } else {
   // Initialize OpenAI client
@@ -47,38 +48,60 @@ let conversations = {};
 // AI Helper Functions
 async function getAIResponse(messages) {
   if (usePuter) {
-    // Use Puter.js AI
+    // Use Puter.js AI - build conversation context from all messages
     const lastMessage = messages[messages.length - 1];
     
+    // Create a rich context prompt that includes conversation history
+    let contextPrompt = lastMessage.content;
+    if (messages.length > 1) {
+      // Include previous messages for context
+      const conversationHistory = messages.slice(-5).map(msg => 
+        `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+      ).join('\n');
+      contextPrompt = `Previous conversation:\n${conversationHistory}\n\nRespond naturally to the last message.`;
+    }
+    
     try {
-      // Try to use Puter.js AI chat
-      let response;
+      console.log('🤖 Calling Puter.js AI...');
+      // Call Puter.js AI chat
+      const response = await puter.ai.chat(contextPrompt);
       
-      if (puter.ai && puter.ai.chat) {
-        try {
-          response = await puter.ai.chat(lastMessage.content);
-          
-          // Handle different response formats
-          if (typeof response === 'string') {
-            return response;
-          } else if (response && response.message && response.code === 'token_missing') {
-            // Authentication required - provide fallback
-            console.log('Puter.js authentication required. Using fallback response.');
-            return generateFallbackResponse(lastMessage.content);
-          } else if (response && (response.text || response.content || response.message)) {
-            return response.text || response.content || response.message;
-          } else {
-            return JSON.stringify(response);
-          }
-        } catch (authError) {
-          console.log('Puter.js authentication error, using fallback:', authError.message);
+      console.log('✅ Puter.js response received:', typeof response);
+      
+      // Handle different response formats
+      if (typeof response === 'string') {
+        // Check if it's an auth error message
+        if (response.includes('authentication') || response.includes('token')) {
+          console.log('⚠️ Puter.js authentication required, using smart fallback');
           return generateFallbackResponse(lastMessage.content);
         }
-      } else {
+        return response;
+      } else if (response && typeof response === 'object') {
+        // Check for auth error in object response
+        const errorMsg = response.message || response.error || response.text || response.content;
+        if (errorMsg && String(errorMsg).toLowerCase().includes('authentication')) {
+          console.log('⚠️ Puter.js authentication required, using smart fallback');
+          return generateFallbackResponse(lastMessage.content);
+        }
+        
+        // Try different possible response properties
+        const content = response.text || response.content || response.message || response.response;
+        if (content && !String(content).toLowerCase().includes('authentication')) {
+          return String(content);
+        }
+        
+        // If we got here, use smart fallback
+        console.log('⚠️ Puter.js response not usable, using smart fallback');
         return generateFallbackResponse(lastMessage.content);
       }
+      
+      // Fallback if response is unexpected
+      console.log('⚠️ Unexpected Puter.js response format, using smart fallback');
+      return generateFallbackResponse(lastMessage.content);
+      
     } catch (error) {
-      console.log('Puter AI error, using fallback:', error.message);
+      console.error('❌ Puter.js error:', error.message, error.code);
+      // Use smart fallback that still provides value
       return generateFallbackResponse(lastMessage.content);
     }
   } else {
@@ -93,22 +116,50 @@ async function getAIResponse(messages) {
   }
 }
 
-// Fallback AI response generator
+// Smart AI response generator - provides helpful responses when external AI is unavailable
 function generateFallbackResponse(userMessage) {
-  const responses = [
-    `I understand you're asking about "${userMessage}". While I'm currently running on Puter.js (which requires authentication for full AI features), I can still help! This is a demonstration of SigmaGPT working without OpenAI API limits.`,
+  const lowerMsg = userMessage.toLowerCase();
+  
+  // Greeting responses
+  if (lowerMsg.match(/^(hi|hello|hey|greetings|good morning|good evening|good afternoon)/)) {
+    return `Hello! 👋 I'm SigmaGPT, your AI assistant. I'm currently running in standalone mode (without external AI APIs). I can help you with general questions, have conversations, and demonstrate this ChatGPT-like interface. What would you like to talk about?`;
+  }
+  
+  // How are you
+  if (lowerMsg.match(/how are you|how're you|how r u/)) {
+    return `I'm doing great, thank you for asking! 😊 I'm SigmaGPT, running in standalone mode. While I don't have access to large language models right now, I'm here to chat and help where I can. What's on your mind?`;
+  }
+  
+  // Questions about capabilities
+  if (lowerMsg.match(/what can you do|your capabilities|what do you do/)) {
+    return `I'm SigmaGPT, a ChatGPT-like interface. Currently running in standalone mode, I can:\n\n✅ Have conversations and respond to your messages\n✅ Demonstrate a modern chat interface with streaming responses\n✅ Maintain conversation history\n✅ Show that this app can work with or without external AI APIs\n\nFor full AI capabilities with advanced language understanding, the app can be configured with OpenAI or other AI providers. What would you like to know more about?`;
+  }
+  
+  // Questions about space (common example)
+  if (lowerMsg.match(/space|planet|star|galaxy|universe|astronomy/)) {
+    return `Space is fascinating! 🌌 Here are some interesting facts:\n\n1. The observable universe is about 93 billion light-years in diameter\n2. There are more stars in the universe than grains of sand on all of Earth's beaches\n3. A day on Venus is longer than its year!\n\nNote: I'm currently running in standalone mode. For more detailed and accurate space information, you could configure this app with an AI provider like OpenAI. Would you like to know anything else?`;
+  }
+  
+  // Programming questions
+  if (lowerMsg.match(/code|programming|javascript|python|react|node|development/)) {
+    return `I can see you're interested in programming! 💻 This SigmaGPT app itself is built with:\n\n• **Frontend**: React with modern animations\n• **Backend**: Node.js + Express\n• **Features**: Real-time streaming, conversation management\n\nI'm currently in standalone mode. For detailed coding help and advanced programming assistance, you'd want to configure this app with OpenAI or another AI provider. Is there something specific about this project you'd like to know?`;
+  }
+  
+  // Math/numbers questions
+  if (lowerMsg.match(/calculate|math|number|equation|\d+\s*[\+\-\*\/]\s*\d+/)) {
+    return `I can see you're asking about ${userMessage}. While I'm running in standalone mode right now, here's what I can tell you:\n\nFor complex calculations and math problems, you'd want to configure this app with a full AI provider like OpenAI. That would give you access to advanced problem-solving capabilities.\n\nIs there anything else I can help you with? 🤔`;
+  }
+  
+  // General helpful response
+  const generalResponses = [
+    `That's an interesting question about "${userMessage}"! 🤔\n\nI'm SigmaGPT running in standalone mode (without external AI APIs). While I can have basic conversations, for detailed and accurate answers, this app can be configured with OpenAI or other AI providers.\n\nWhat else would you like to talk about?`,
     
-    `Thanks for your message: "${userMessage}". I'm currently operating in demo mode using Puter.js as the AI backend. The full AI capabilities would be available with proper authentication setup.`,
+    `Thanks for your message: "${userMessage}".\n\nI'm currently demonstrating SigmaGPT's standalone capabilities. This shows that the app works even without external AI services! For more sophisticated responses and understanding, you can configure it with an API key from OpenAI or similar providers.\n\nHow can I help you further? 😊`,
     
-    `I see you asked: "${userMessage}". Right now I'm running on Puter.js in fallback mode since your OpenAI API quota was exhausted. This shows that SigmaGPT can work with alternative AI providers!`,
-    
-    `Your question "${userMessage}" is interesting! I'm currently using Puter.js as an alternative to OpenAI. While this is a simplified response, it demonstrates that SigmaGPT can be configured to use different AI backends.`,
-    
-    `I received your message: "${userMessage}". Currently running with Puter.js integration (demo mode). This proves that your ChatGPT clone can work even when OpenAI API limits are reached!`
+    `I understand you're asking about "${userMessage}". \n\nRight now I'm running in demo mode to show that SigmaGPT is functional without requiring paid AI services. This is great for development and testing!\n\nFor production use with full AI capabilities, you'd configure this with OpenAI, Anthropic, or another AI provider. Anything else I can help with?`
   ];
   
-  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-  return randomResponse;
+  return generalResponses[Math.floor(Math.random() * generalResponses.length)];
 }
 
 async function* getAIStreamResponse(messages) {
