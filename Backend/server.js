@@ -385,3 +385,12 @@ app.listen(PORT, () => {
   console.log(`📡 API Health check: http://localhost:${PORT}/api/health`);
   console.log(`🤖 AI Service: ${usePuter ? 'Puter.js' : 'OpenAI'}`);
 });
+
+// Safe debug endpoint (does NOT expose keys)
+app.get('/api/debug', (req, res) => {
+  res.json({
+    usePuter: process.env.USE_PUTER === 'true',
+    openaiConfigured: !!process.env.OPENAI_API_KEY,
+    nodeEnv: process.env.NODE_ENV || 'development'
+  });
+});
