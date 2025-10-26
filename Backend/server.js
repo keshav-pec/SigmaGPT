@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize Google Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // Middleware - Configure CORS
 const corsOptions = {
@@ -324,7 +324,7 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
 app.get('/api/debug', (req, res) => {
   res.json({
     aiProvider: 'Google Gemini',
-    model: 'gemini-2.0-flash-exp',
+    model: 'gemini-2.5-flash',
     geminiConfigured: !!process.env.GEMINI_API_KEY,
     nodeEnv: process.env.NODE_ENV || 'development'
   });
@@ -333,5 +333,5 @@ app.get('/api/debug', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 SigmaGPT Backend running on port ${PORT}`);
   console.log(`📡 API Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🤖 AI Service: Google Gemini 2.0 Flash`);
+  console.log(`🤖 AI Service: Google Gemini 2.5 Flash`);
 });
