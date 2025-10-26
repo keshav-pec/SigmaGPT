@@ -1,147 +1,163 @@
 import React, { useState, useEffect } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import './App.css';
-import Sidebar from './components/Sidebar';
-import StreamingChatArea from './components/StreamingChatArea';
-import AnimatedHomepage from './components/AnimatedHomepage';
-import PageTransition from './components/PageTransition';
+import ModernSidebar from './components/ModernSidebar';
+import ModernChatArea from './components/ModernChatArea';
+import LandingPage from './components/LandingPage';
 import { conversationService } from './services/api';
 
 function App() {
-  const [showHomepage, setShowHomepage] = useState(true);
-  const [conversations, setConversations] = useState([]);
-  const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
 
   // Load conversations on app start
   useEffect(() => {
     loadConversations();
   }, []);
 
-  // Load current conversation when ID changes
-  useEffect(() => {
-    if (currentConversationId) {
-      loadConversation(currentConversationId);
-    } else {
-      setCurrentConversation(null);
-    }
-  }, [currentConversationId]);
-
   const loadConversations = async () => {
     try {
       const conversationList = await conversationService.getConversations();
-      setConversations(conversationList);
+      // Sort conversations by ID (timestamp) in descending order - newest first
+      const sortedConversations = conversationList.sort((a, b) => b.id - a.id);
+      setConversations(sortedConversations);
     } catch (error) {
       console.error('Failed to load conversations:', error);
     }
   };
 
-  const loadConversation = async (id) => {
+  const handleNewChat = () => {
+    setCurrentConversation(null);
+    setShowLanding(false);
+  };
+
+  const handleSelectConversation = async (conversation) => {
     try {
-      setLoading(true);
-      const conversation = await conversationService.getConversation(id);
-      setCurrentConversation(conversation);
+      // Load the full conversation with messages
+      const fullConversation = await conversationService.getConversation(conversation.id);
+      setCurrentConversation(fullConversation);
+      setShowLanding(false);
     } catch (error) {
       console.error('Failed to load conversation:', error);
-    } finally {
-      setLoading(false);
+      setCurrentConversation(conversation);
+      setShowLanding(false);
     }
   };
 
-  const createNewConversation = async () => {
+  const handleDeleteConversation = async (conversationId) => {
     try {
-      const newConversation = await conversationService.createConversation();
-      setConversations(prev => [newConversation, ...prev]);
-      setCurrentConversationId(newConversation.id);
-    } catch (error) {
-      console.error('Failed to create conversation:', error);
-    }
-  };
-
-  const deleteConversation = async (id) => {
-    try {
-      await conversationService.deleteConversation(id);
-      setConversations(prev => prev.filter(conv => conv.id !== id));
-      if (currentConversationId === id) {
-        setCurrentConversationId(null);
+      await conversationService.deleteConversation(conversationId);
+      setConversations(conversations.filter(c => c.id !== conversationId));
+      if (currentConversation?.id === conversationId) {
+        setCurrentConversation(null);
+        setShowLanding(true);
       }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
     }
   };
 
-  const handleConversationUpdate = (update) => {
-    switch (update.type) {
-      case 'new_conversation':
-        setConversations(prev => [update.data, ...prev]);
-        setCurrentConversationId(update.data.id);
-        setCurrentConversation(update.data);
-        break;
-      
-      case 'add_message':
-        const { conversationId, message } = update.data;
-        setCurrentConversation(prev => {
-          if (prev && prev.id === conversationId) {
-            return {
-              ...prev,
-              messages: [...prev.messages, message]
-            };
-          }
-          return prev;
-        });
-        break;
-      
-      case 'update_conversation':
-        const updatedConv = update.data;
-        setConversations(prev => prev.map(conv => 
-          conv.id === updatedConv.id 
-            ? { ...conv, ...updatedConv }
-            : conv
-        ));
-        break;
-      
-      default:
-        break;
-    }
-  };
-
   const handleStartChat = () => {
-    setShowHomepage(false);
-  };
-
-  const handleBackToHome = () => {
-    setShowHomepage(true);
-    setCurrentConversationId(null);
+    setShowLanding(false);
     setCurrentConversation(null);
   };
 
+  const handleSendMessage = async (message) => {
+    try {
+      let conversation = currentConversation;
+      
+      if (!conversation) {
+        conversation = await conversationService.createConversation();
+        const updatedConversations = [conversation, ...conversations];
+        setConversations(updatedConversations);
+        setCurrentConversation(conversation);
+      }
+
+      const userMessage = { role: 'user', content: message };
+      const updatedConversation = {
+        ...conversation,
+        messages: [...(conversation.messages || []), userMessage]
+      };
+      setCurrentConversation(updatedConversation);
+
+      setIsStreaming(true);
+      let assistantMessage = { role: 'assistant', content: '' };
+      
+      await conversationService.streamMessage(
+        conversation.id,
+        message,
+        (data) => {
+          if (data.content) {
+            assistantMessage.content += data.content;
+            setCurrentConversation(prev => ({
+              ...prev,
+              messages: [
+                ...(prev.messages || []).filter(m => m.role !== 'assistant' || m.content),
+                { ...assistantMessage }
+              ]
+            }));
+          }
+        },
+        (error) => {
+          console.error('Streaming error:', error);
+          setIsStreaming(false);
+        },
+        () => {
+          setIsStreaming(false);
+          conversationService.getConversation(conversation.id).then(updated => {
+            setCurrentConversation(updated);
+            setConversations(prevConversations => 
+              prevConversations.map(c => c.id === updated.id ? updated : c)
+            );
+          });
+        }
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setIsStreaming(false);
+    }
+  };
+
   return (
-    <PageTransition key={showHomepage ? 'homepage' : 'chat'}>
-      {showHomepage ? (
-        <AnimatedHomepage onStartChat={handleStartChat} />
-      ) : (
-        <div className="App">
-          <Sidebar
-            conversations={conversations}
-            currentConversationId={currentConversationId}
-            onConversationSelect={setCurrentConversationId}
-            onNewConversation={createNewConversation}
-            onDeleteConversation={deleteConversation}
-            onBackToHome={handleBackToHome}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          />
-          <StreamingChatArea
-            conversation={currentConversation}
-            onConversationUpdate={handleConversationUpdate}
-            loading={loading}
-            setLoading={setLoading}
-            sidebarCollapsed={sidebarCollapsed}
-          />
-        </div>
-      )}
-    </PageTransition>
+    <div className="app-container">
+      <div className="gradient-bg">
+        <div className="gradient-orb gradient-orb-1"></div>
+        <div className="gradient-orb gradient-orb-2"></div>
+        <div className="gradient-orb gradient-orb-3"></div>
+      </div>
+
+      <div className="grid-overlay"></div>
+
+      <div className="app-content">
+        <ModernSidebar
+          conversations={conversations}
+          currentConversation={currentConversation}
+          onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+
+        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          <AnimatePresence mode="wait">
+            {showLanding ? (
+              <LandingPage key="landing" onStartChat={handleStartChat} />
+            ) : (
+              <ModernChatArea
+                key="chat"
+                conversation={currentConversation}
+                onSendMessage={handleSendMessage}
+                isStreaming={isStreaming}
+              />
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
+    </div>
   );
 }
 

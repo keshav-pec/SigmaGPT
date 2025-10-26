@@ -1,13 +1,97 @@
+:root {
+  --primary-gradient: linear-gradient(135deg, #8a2be2, #007bff);
+  --secondary-gradient: linear-gradient(135deg, #00bfff, #8a2be2);
+  --accent-gradient: linear-gradient(135deg, #ff00ff, #00ffff);
+  
+  --bg-dark: #0a0a1a;
+  --bg-darker: #050510;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-medium: rgba(255, 255, 255, 0.2);
+  
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.4);
+  
+  --glow-purple: 0 0 20px rgba(138, 43, 226, 0.5);
+  --glow-blue: 0 0 20px rgba(0, 191, 255, 0.5);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Fira Code', 'Courier New', Consolas, Monaco, monospace;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+}
+
+input,
+textarea {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(138, 43, 226, 0.4);
+  color: white;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #8a2be2, #007bff);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #9d3ef5, #0095ff);
+}
+
+/* Utility Classes */
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glow-on-hover:hover {
+  box-shadow: var(--glow-purple);
 }
