@@ -6,24 +6,14 @@ import './LandingPage.css';
 const LandingPage = ({ onStartChat }) => {
   const features = [
     {
-      icon: <Sparkles size={24} />,
-      title: 'Powered by Gemini 2.5 Flash',
-      description: 'Latest AI technology for lightning-fast responses'
-    },
-    {
       icon: <Zap size={24} />,
       title: 'Real-time Streaming',
-      description: 'See responses generated word by word'
+      description: 'Watch AI responses flow naturally, word by word in real-time'
     },
     {
       icon: <MessageSquare size={24} />,
       title: 'Natural Conversations',
-      description: 'Context-aware chat that remembers your conversation'
-    },
-    {
-      icon: <Bot size={24} />,
-      title: 'Advanced AI',
-      description: 'Intelligent responses powered by Google Gemini'
+      description: 'Context-aware intelligent chat that remembers your dialogue'
     }
   ];
 

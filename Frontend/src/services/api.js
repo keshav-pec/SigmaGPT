@@ -79,7 +79,17 @@ export const conversationService = {
             
             try {
               const parsed = JSON.parse(data);
-              onData?.(parsed);
+              
+              // Handle different message types from backend
+              if (parsed.type === 'assistant_chunk' && parsed.data?.content) {
+                // Send chunk content for word-by-word processing
+                onData?.({ content: parsed.data.content });
+              } else if (parsed.type === 'assistant_complete') {
+                // Streaming complete
+                onComplete?.();
+              } else if (parsed.type === 'error') {
+                onError?.(new Error(parsed.data?.message || 'Streaming error'));
+              }
             } catch (e) {
               console.warn('Failed to parse SSE data:', data);
             }
