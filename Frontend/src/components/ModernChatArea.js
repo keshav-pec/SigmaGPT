@@ -6,27 +6,16 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './ModernChatArea.css';
 
-const ModernChatArea = ({ 
-  conversation, 
-  onSendMessage, 
-  isStreaming 
-}) => {
+const ModernChatArea = ({ conversation, onSendMessage, isStreaming }) => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [conversation?.messages]);
-
-  useEffect(() => {
-    setIsTyping(isStreaming);
-  }, [isStreaming]);
+  useEffect(() => scrollToBottom(), [conversation?.messages]);
+  useEffect(() => setIsTyping(isStreaming), [isStreaming]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

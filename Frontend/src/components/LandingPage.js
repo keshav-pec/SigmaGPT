@@ -1,52 +1,26 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Zap, MessageSquare, Bot } from 'lucide-react';
+import { Sparkles, Zap, MessageSquare } from 'lucide-react';
 import './LandingPage.css';
 
 const LandingPage = ({ onStartChat }) => {
   const features = [
-    {
-      icon: <Zap size={24} />,
-      title: 'Real-time Streaming',
-      description: 'Watch AI responses flow naturally, word by word in real-time'
-    },
-    {
-      icon: <MessageSquare size={24} />,
-      title: 'Natural Conversations',
-      description: 'Context-aware intelligent chat that remembers your dialogue'
-    }
+    { icon: <Zap size={24} />, title: 'Real-time Streaming', description: 'Watch AI responses flow naturally, word by word in real-time' },
+    { icon: <MessageSquare size={24} />, title: 'Natural Conversations', description: 'Context-aware intelligent chat that remembers your dialogue' }
   ];
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: 'spring',
-        stiffness: 100
-      }
-    }
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } }
   };
 
   return (
-    <motion.div
-      className="landing-container"
-      initial="hidden"
-      animate="visible"
-      exit={{ opacity: 0, scale: 0.95 }}
-      variants={containerVariants}
-    >
+    <motion.div className="landing-container" initial="hidden" animate="visible" exit={{ opacity: 0, scale: 0.95 }} variants={containerVariants}>
       <div className="landing-content">
         <motion.div className="logo-container" variants={itemVariants}>
           <div className="logo-glow"></div>
@@ -74,12 +48,7 @@ const LandingPage = ({ onStartChat }) => {
 
         <motion.div className="features-grid" variants={containerVariants}>
           {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              className="feature-card"
-              variants={itemVariants}
-              whileHover={{ y: -5, scale: 1.02 }}
-            >
+            <motion.div key={index} className="feature-card" variants={itemVariants} whileHover={{ y: -5, scale: 1.02 }}>
               <div className="feature-icon">{feature.icon}</div>
               <h3 className="feature-title">{feature.title}</h3>
               <p className="feature-description">{feature.description}</p>
@@ -93,7 +62,6 @@ const LandingPage = ({ onStartChat }) => {
         </motion.div>
       </div>
 
-      {/* Floating particles */}
       <div className="particles">
         {[...Array(20)].map((_, i) => (
           <div key={i} className="particle" style={{

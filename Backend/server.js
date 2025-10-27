@@ -7,16 +7,11 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// Initialize Google Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-// Middleware - Configure CORS
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? true
-    : ['http://localhost:3000', 'http://localhost:3003'],
+  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:3000', 'http://localhost:3003'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -25,58 +20,32 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// In-memory storage for conversations
 let conversations = {};
 
-// AI Helper Functions
 async function getAIResponse(messages) {
-  try {
-    const chat = model.startChat({
-      history: messages.slice(0, -1).map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-      },
-    });
-
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessage(lastMessage.content);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    console.error('❌ Gemini API error:', error.message);
-    throw error;
-  }
+  const chat = model.startChat({
+    history: messages.slice(0, -1).map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    })),
+    generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
+  });
+  const result = await chat.sendMessage(messages[messages.length - 1].content);
+  return (await result.response).text();
 }
 
 async function* getAIStreamResponse(messages) {
-  try {
-    const chat = model.startChat({
-      history: messages.slice(0, -1).map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-      },
-    });
-
-    const lastMessage = messages[messages.length - 1];
-    const result = await chat.sendMessageStream(lastMessage.content);
-    
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      if (chunkText) {
-        yield chunkText;
-      }
-    }
-  } catch (error) {
-    console.error('❌ Gemini streaming error:', error.message);
-    throw error;
+  const chat = model.startChat({
+    history: messages.slice(0, -1).map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    })),
+    generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
+  });
+  const result = await chat.sendMessageStream(messages[messages.length - 1].content);
+  for await (const chunk of result.stream) {
+    const chunkText = chunk.text();
+    if (chunkText) yield chunkText;
   }
 }
 
@@ -108,29 +77,16 @@ app.get('/api/conversations/:id', (req, res) => {
   res.json(conversation);
 });
 
-// Create new conversation
 app.post('/api/conversations', (req, res) => {
   const id = Date.now().toString();
-  const conversation = {
-    id,
-    title: 'New Chat',
-    messages: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
+  const conversation = { id, title: 'New Chat', messages: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
   conversations[id] = conversation;
   res.json(conversation);
 });
 
-// Delete conversation
 app.delete('/api/conversations/:id', (req, res) => {
   const { id } = req.params;
-  
-  if (!conversations[id]) {
-    return res.status(404).json({ error: 'Conversation not found' });
-  }
-  
+  if (!conversations[id]) return res.status(404).json({ error: 'Conversation not found' });
   delete conversations[id];
   res.json({ message: 'Conversation deleted successfully' });
 });

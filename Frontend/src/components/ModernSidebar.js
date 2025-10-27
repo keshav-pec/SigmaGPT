@@ -30,7 +30,7 @@ const ModernSidebar = ({
               <div className="sidebar-header-top">
                 <div className="sidebar-logo">
                   <span className="sidebar-logo-sigma">Σ</span>
-                  <span className="sidebar-logo-text">SigmaGPT</span>
+                  <a className="sidebar-logo-text" href="/">SigmaGPT</a>
                 </div>
                 
                 {/* Close Button */}
