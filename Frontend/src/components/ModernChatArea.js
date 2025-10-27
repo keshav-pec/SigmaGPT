@@ -106,11 +106,11 @@ const ModernChatArea = ({ conversation, onSendMessage, isStreaming }) => {
                 <button 
                   className="chip"
                   onClick={() => {
-                    setInput('Explain quantum computing in simple terms');
+                    setInput('Explain Object Oriented Programming in simple terms');
                     inputRef.current?.focus();
                   }}
                 >
-                  Explain quantum computing
+                  What is OOPs
                 </button>
                 <button 
                   className="chip"
@@ -124,11 +124,11 @@ const ModernChatArea = ({ conversation, onSendMessage, isStreaming }) => {
                 <button 
                   className="chip"
                   onClick={() => {
-                    setInput('What are the latest AI trends?');
+                    setInput('How to start with MERN stack?');
                     inputRef.current?.focus();
                   }}
                 >
-                  Latest AI trends
+                  Start MERN stack
                 </button>
               </div>
             </motion.div>

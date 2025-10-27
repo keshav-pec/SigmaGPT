@@ -11,7 +11,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:3000', 'http://localhost:3003'],
+  origin: process.env.NODE_ENV === 'production' ? true : ['http://localhost:3003', 'http://localhost:3033'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -28,24 +28,39 @@ async function getAIResponse(messages) {
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     })),
-    generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
+    generationConfig: { maxOutputTokens: 2048, temperature: 0.7 }
   });
   const result = await chat.sendMessage(messages[messages.length - 1].content);
   return (await result.response).text();
 }
 
 async function* getAIStreamResponse(messages) {
-  const chat = model.startChat({
-    history: messages.slice(0, -1).map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    })),
-    generationConfig: { maxOutputTokens: 1000, temperature: 0.7 }
-  });
-  const result = await chat.sendMessageStream(messages[messages.length - 1].content);
-  for await (const chunk of result.stream) {
-    const chunkText = chunk.text();
-    if (chunkText) yield chunkText;
+  try {
+    const chat = model.startChat({
+      history: messages.slice(0, -1).map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }]
+      })),
+      generationConfig: { 
+        maxOutputTokens: 4096,
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95
+      }
+    });
+    
+    console.log('🤖 Sending to Gemini...');
+    const result = await chat.sendMessageStream(messages[messages.length - 1].content);
+    
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      if (chunkText) {
+        yield chunkText;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Gemini API error:', error.message);
+    throw new Error(`AI generation failed: ${error.message}`);
   }
 }
 
@@ -186,6 +201,15 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
     'Access-Control-Allow-Headers': 'Cache-Control'
   });
   
+  // Set 45 second timeout
+  const timeout = setTimeout(() => {
+    console.error('⏱️ Streaming timeout after 45 seconds');
+    try {
+      res.write(`data: ${JSON.stringify({ type: 'error', data: { message: 'Request timeout' } })}\n\n`);
+      res.end();
+    } catch (e) {}
+  }, 45000);
+  
   // Get or create conversation
   if (!conversations[id]) {
     conversations[id] = {
@@ -210,6 +234,8 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
   conversation.messages.push(userMessage);
   
   try {
+    console.log(`📨 Processing: "${message.substring(0, 50)}..."`);
+    
     // Prepare messages for AI
     const messages = conversation.messages.map(msg => ({
       role: msg.role,
@@ -226,13 +252,23 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
     // Send start of assistant message
     res.write(`data: ${JSON.stringify({ type: 'assistant_start', data: { id: assistantMessageId } })}\n\n`);
     
+    console.log('🔄 Starting stream...');
+    let chunkCount = 0;
+    
     // Stream the response
     for await (const chunk of getAIStreamResponse(messages)) {
+      clearTimeout(timeout);
       if (chunk) {
+        chunkCount++;
         assistantContent += chunk;
         res.write(`data: ${JSON.stringify({ type: 'assistant_chunk', data: { content: chunk } })}\n\n`);
       }
     }
+    
+    console.log(`✅ Stream complete: ${chunkCount} chunks, ${assistantContent.length} chars`);
+    console.log(`✅ Stream complete: ${chunkCount} chunks, ${assistantContent.length} chars`);
+    
+    clearTimeout(timeout);
     
     // Add complete assistant message to conversation
     const assistantMessage = {
@@ -265,7 +301,9 @@ app.post('/api/conversations/:id/stream', async (req, res) => {
     })}\n\n`);
     
   } catch (error) {
-    console.error('AI Streaming API error:', error);
+    clearTimeout(timeout);
+    console.error('❌ AI Streaming error:', error.message);
+    console.error('Full error:', error);
     res.write(`data: ${JSON.stringify({ 
       type: 'error', 
       data: { message: 'AI provider error. Check server logs for details.' } 
