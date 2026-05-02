@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, MessageSquare, Trash2, Menu, X } from 'lucide-react';
+import { Plus, MessageSquare, Trash2, Menu, X, Download } from 'lucide-react';
 import './ModernSidebar.css';
 
 const ModernSidebar = ({ 
@@ -13,6 +13,38 @@ const ModernSidebar = ({
   onToggle
 }) => {
   const [hoveredId, setHoveredId] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      // We've used the prompt, and can't use it again, discard it
+      setDeferredPrompt(null);
+    }
+  };
 
   return (
     <>
@@ -112,6 +144,17 @@ const ModernSidebar = ({
             </div>
 
             <div className="sidebar-footer">
+              {deferredPrompt && (
+                <motion.button 
+                  className="install-app-button"
+                  onClick={handleInstallClick}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Download size={16} />
+                  <span>Download App</span>
+                </motion.button>
+              )}
               <div className="footer-badge">
                 <div className="badge-dot"></div>
                 <span>Powered by Gemini 2.5</span>
