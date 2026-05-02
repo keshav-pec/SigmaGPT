@@ -15,13 +15,18 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Only cache GET requests
+  if (event.request.method !== 'GET') {
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        // Return from cache or fetch from network
+        return response || fetch(event.request).catch(() => {
+          // Optional: return offline page if network fails
+        });
       })
   );
 });

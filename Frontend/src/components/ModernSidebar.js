@@ -16,33 +16,41 @@ const ModernSidebar = ({
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
+    // Check if it was already captured globally
+    if (window.deferredPrompt) {
+      setDeferredPrompt(window.deferredPrompt);
+    }
+
+    const handlePromptReady = () => {
+      setDeferredPrompt(window.deferredPrompt);
+    };
+
     const handleBeforeInstallPrompt = (e) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
+      window.deferredPrompt = e;
       setDeferredPrompt(e);
     };
 
+    window.addEventListener('prompt-ready', handlePromptReady);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
+      window.removeEventListener('prompt-ready', handlePromptReady);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      // Show the install prompt
       deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
       }
-      // We've used the prompt, and can't use it again, discard it
       setDeferredPrompt(null);
+      window.deferredPrompt = null;
     }
   };
 
