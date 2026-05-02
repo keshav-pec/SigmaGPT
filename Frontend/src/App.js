@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 import './App.css';
 import ModernSidebar from './components/ModernSidebar';
 import ModernChatArea from './components/ModernChatArea';
