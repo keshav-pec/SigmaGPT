@@ -6,6 +6,21 @@
   "outputDirectory": "build",
   "installCommand": "npm install",
   "devCommand": "npm start",
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/service-worker.js",
+      "destination": "/service-worker.js"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "routes": [
     {
       "src": "/static/(.*)",
