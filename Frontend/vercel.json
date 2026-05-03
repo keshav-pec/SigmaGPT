@@ -15,7 +15,7 @@
       ]
     },
     {
-      "source": "/(site.webmanifest|service-worker.js|favicon.ico)",
+      "source": "/(manifest.json|service-worker.js|favicon.ico)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -25,10 +25,6 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/(site.webmanifest|service-worker.js|favicon.ico|logo192.png|logo512.png)",
-      "destination": "/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

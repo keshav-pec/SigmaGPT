@@ -25,7 +25,10 @@ self.addEventListener('fetch', event => {
       .then(response => {
         // Return from cache or fetch from network
         return response || fetch(event.request).catch(() => {
-          // Optional: return offline page if network fails
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          // Optional: return offline page if network fails and not navigation
         });
       })
   );
